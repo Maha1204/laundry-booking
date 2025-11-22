@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tvättstuga Bokning</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4facfe;
+            --secondary: #00f2fe;
+            --glass-bg: rgba(255, 255, 255, 0.25);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --text-dark: #2d3748;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* --- Bubbles Animation --- */
+        .bubbles { position: fixed; width: 100%; height: 100%; z-index: -1; top: 0; left: 0; overflow: hidden; pointer-events: none;}
+        .bubble { position: absolute; bottom: -100px; background: rgba(255, 255, 255, 0.3); border-radius: 50%; animation: rise 15s infinite ease-in; }
+        .bubble:nth-child(1) { width: 40px; height: 40px; left: 10%; animation-duration: 8s; }
+        .bubble:nth-child(2) { width: 20px; height: 20px; left: 20%; animation-duration: 5s; animation-delay: 1s; }
+        .bubble:nth-child(3) { width: 50px; height: 50px; left: 35%; animation-duration: 10s; animation-delay: 2s; }
+        .bubble:nth-child(4) { width: 80px; height: 80px; left: 50%; animation-duration: 11s; }
+        @keyframes rise {
+            0% { bottom: -100px; transform: translateX(0); }
+            50% { transform: translateX(50px); }
+            100% { bottom: 120vh; transform: translateX(-50px); }
+        }
+
+        /* --- Layout --- */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+        @media(min-width: 768px) {
+            .container { grid-template-columns: 1fr 1fr; align-items: start; }
+            .header-section { grid-column: 1 / -1; }
+        }
+
+        /* --- Glass Cards --- */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+
+        /* --- Header & Icon --- */
+        header { text-align: center; color: white; margin-bottom: 20px; text-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1 { font-size: 2.8em; margin-bottom: 5px; font-weight: 600; }
+        
+        .washing-machine {
+            width: 80px; height: 100px; background: white; border-radius: 10px; margin: 0 auto 20px;
+            position: relative; box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            display: flex; justify-content: center; align-items: center;
+        }
+        .washing-machine::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 20px; border-bottom: 2px solid #eee; }
+        .drum {
+            width: 50px; height: 50px; border-radius: 50%; border: 4px solid #ddd; position: relative; overflow: hidden;
+            animation: spin 4s linear infinite;
+        }
+        .water {
+            position: absolute; bottom: 0; width: 100%; height: 40%; background: #4facfe; opacity: 0.6;
+            animation: wave 2s infinite ease-in-out alternate;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes wave { 0% { height: 40%; transform: skewX(-10deg); } 100% { height: 50%; transform: skewX(10deg); } }
+
+        /* --- Forms --- */
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #444; }
+        input {
+            width: 100%; padding: 15px; border: none; border-radius: 12px;
+            background: rgba(255, 255, 255, 0.8); font-size: 16px; transition: all 0.3s;
+        }
+        input:focus { outline: none; background: white; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transform: translateY(-2px); }
+
+        /* --- Time Slots --- */
+        .time-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .time-slot {
+            padding: 12px; background: rgba(255, 255, 255, 0.6); border-radius: 12px;
+            text-align: center; cursor: pointer; font-weight: 600; transition: all 0.3s;
+        }
+        .time-slot:hover { background: white; transform: scale(1.05); }
+        .time-slot.selected { background: #4facfe; color: white; box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4); }
+        
+        /* DISABLED STATE */
+        .time-slot.booked {
+            background: rgba(0, 0, 0, 0.1);
+            color: #888;
+            cursor: not-allowed;
+            text-decoration: line-through;
+            pointer-events: none; /* Prevent clicking */
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        button[type="submit"] {
+            width: 100%; padding: 16px; background: #2d3748; color: white; border: none;
+            border-radius: 12px; font-size: 1.1em; font-weight: 600; cursor: pointer; transition: all 0.3s; margin-top: 10px;
+        }
+        button[type="submit"]:hover { background: #1a202c; transform: translateY(-2px); }
+
+        /* --- List --- */
+        .bookings-list { max-height: 80vh; overflow-y: auto; }
+        .booking-card {
+            background: white; position: relative; padding: 20px; margin-bottom: 20px; border-radius: 2px;
+            background-image: linear-gradient(135deg, #ffffff 50%, transparent 50%), linear-gradient(45deg, #ffffff 50%, transparent 50%);
+            background-position: bottom left; background-repeat: repeat-x; background-size: 16px 16px; padding-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center;
+            animation: slideIn 0.5s ease-out forwards;
+        }
+        .booking-card::before {
+            content: ''; position: absolute; top: 50%; left: -8px; width: 16px; height: 16px;
+            background: #4facfe; border-radius: 50%; transform: translateY(-50%);
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        
+        .delete-btn { background: #fff1f1; color: #e53e3e; border: 1px solid #ffebeb; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
+        .delete-btn:hover { background: #e53e3e; color: white; }
+
+        .message { padding: 15px; border-radius: 12px; margin-bottom: 20px; display: none; text-align: center; font-weight: 600; }
+        .message.success { background: #d4edda; color: #155724; }
+        .message.error { background: #fff5f5; color: #c53030; }
+    </style>
+</head>
+<body>
+
+    <div class="bubbles">
+        <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
+    </div>
+
+    <div class="container">
+        <header class="header-section">
+            <div class="washing-machine">
+                <div class="drum"><div class="water"></div></div>
+            </div>
+            <h1>Tvättstugan</h1>
+            <p>Boka din tvättid enkelt och smidigt</p>
+        </header>
+
+        <div class="glass-card">
+            <div id="message" class="message"></div>
+            <h2>🧺 Ny Bokning</h2>
+            <form id="bookingForm">
+                <div class="form-group">
+                    <label for="name">Ditt Namn</label>
+                    <input type="text" id="name" placeholder="T.ex. Anna Andersson" required>
+                </div>
+                <div class="form-group">
+                    <label for="apartment">Lägenhetsnummer</label>
+                    <input type="text" id="apartment" placeholder="T.ex. 1201" required>
+                </div>
+                <div class="form-group">
+                    <label for="date">Välj Datum</label>
+                    <input type="date" id="date" required onchange="checkAvailability()">
+                </div>
+                <div class="form-group">
+                    <label>Tillgängliga Tider</label>
+                    <div class="time-slots" id="timeSlots"></div>
+                    <input type="hidden" id="time" required>
+                </div>
+                <button type="submit">Bekräfta Bokning</button>
+            </form>
+        </div>
+
+        <div class="glass-card bookings-list">
+            <h2>📅 Kommande Tvättar</h2>
+            <div id="bookingsList"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        const timeSlots = ['07:00', '10:00', '13:00', '16:00', '19:00', '22:00'];
+
+        // Create the time slot buttons
+        function initTimeSlots() {
+            const container = document.getElementById('timeSlots');
+            container.innerHTML = '';
+            timeSlots.forEach(time => {
+                const slot = document.createElement('div');
+                slot.className = 'time-slot';
+                slot.textContent = time;
+                slot.dataset.time = time; // Store time in data attribute for easy access
+                slot.onclick = () => selectTime(time, slot);
+                container.appendChild(slot);
+            });
+        }
+
+        // NEW FUNCTION: Check which times are taken for the selected date
+        async function checkAvailability() {
+            const dateInput = document.getElementById('date').value;
+            if (!dateInput) return;
+
+            // Reset selection
+            document.getElementById('time').value = '';
+            document.querySelectorAll('.time-slot').forEach(slot => {
+                slot.classList.remove('selected');
+                slot.classList.remove('booked'); // Reset booked status
+                slot.title = "Tillgänglig";
+            });
+
+            try {
+                // Fetch bookings for this specific date
+                const response = await fetch(`${API_URL}/bookings/date/${dateInput}`);
+                const bookings = await response.json();
+
+                // Get list of booked times
+                const bookedTimes = bookings.map(b => b.time);
+
+                // Disable the buttons that match booked times
+                document.querySelectorAll('.time-slot').forEach(slot => {
+                    const slotTime = slot.dataset.time;
+                    if (bookedTimes.includes(slotTime)) {
+                        slot.classList.add('booked');
+                        slot.title = "Redan bokad";
+                    }
+                });
+
+            } catch (error) {
+                console.error("Kunde inte kontrollera tillgänglighet:", error);
+            }
+        }
+
+        function selectTime(time, element) {
+            // Prevent selecting booked slots
+            if (element.classList.contains('booked')) return;
+            
+            document.querySelectorAll('.time-slot').forEach(slot => {
+                slot.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            document.getElementById('time').value = time;
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = `message ${type}`;
+            msg.style.display = 'block';
+            setTimeout(() => {
+                msg.style.display = 'none';
+            }, 3000);
+        }
+
+        async function loadBookings() {
+            try {
+                const response = await fetch(`${API_URL}/bookings`);
+                const bookings = await response.json();
+                displayBookings(bookings);
+            } catch (error) {
+                showMessage('Kunde inte hämta bokningar', 'error');
+            }
+        }
+
+        function displayBookings(bookings) {
+            const container = document.getElementById('bookingsList');
+            if (bookings.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">Inga bokningar just nu.</p>';
+                return;
+            }
+
+            container.innerHTML = bookings.map(booking => `
+                <div class="booking-card">
+                    <div class="booking-info">
+                        <h3>${booking.time}</h3>
+                        <p>🗓 ${booking.date}</p>
+                        <p>👤 ${booking.name} (Lgh: ${booking.apartment})</p>
+                    </div>
+                    <button class="delete-btn" onclick="deleteBooking(${booking.id})">
+                        Avboka
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('bookingForm').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                name: document.getElementById('name').value,
+                apartment: document.getElementById('apartment').value,
+                date: document.getElementById('date').value,
+                time: document.getElementById('time').value
+            };
+
+            if (!data.time) {
+                showMessage('Glöm inte att välja en tid!', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/bookings`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage('✅ Bokning lyckades!', 'success');
+                    document.getElementById('bookingForm').reset();
+                    
+                    // Set date to today or refresh slots
+                    document.querySelectorAll('.time-slot').forEach(s => {
+                        s.classList.remove('selected');
+                        s.classList.remove('booked');
+                    });
+                    
+                    loadBookings();
+                } else {
+                    showMessage(result.error || 'Något gick fel', 'error');
+                }
+            } catch (error) {
+                showMessage('Kunde inte skapa bokning', 'error');
+            }
+        };
+
+        async function deleteBooking(id) {
+            if (!confirm('Vill du ta bort din tvättid?')) return;
+            try {
+                const response = await fetch(`${API_URL}/bookings/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    showMessage('🗑 Bokning borttagen', 'success');
+                    loadBookings();
+                    // Re-check availability for the date currently in the form
+                    checkAvailability();
+                } else {
+                    showMessage('Kunde inte ta bort bokning', 'error');
+                }
+            } catch (error) {
+                showMessage('Fel vid borttagning', 'error');
+            }
+        }
+
+        // Set min date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date').min = today;
+        
+        // Initialize
+        initTimeSlots();
+        loadBookings();
+    </script>
+</body>
+</html>
