@@ -9,7 +9,7 @@ CORS(app)
 # Databasanslutning
 def connect_db():
     return pymysql.connect(
-        host='biblioteks-db.c74qek6ikkuc.eu-north-1.rds.amazonaws.com',  # Fyll i din host (t.ex. 'localhost')
+        host='biblioteks-db.c74qek6ikkuc.eu-north-1.rds.amazonaws.com',  
         user='admin', 
         password='4RhQLjYY9bSH4QG',  
         database='laundry_booking',  
