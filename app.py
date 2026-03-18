@@ -10,9 +10,9 @@ CORS(app)
 def connect_db():
     return pymysql.connect(
         host='biblioteks-db.c74qek6ikkuc.eu-north-1.rds.amazonaws.com',  # Fyll i din host (t.ex. 'localhost')
-        user='admin',  # Fyll i ditt användarnamn
-        password='4RhQLjYY9bSH4QG',  # Fyll i ditt lösenord
-        database='laundry_booking',  # Fyll i ditt databasnamn
+        user='admin', 
+        password='4RhQLjYY9bSH4QG',  
+        database='laundry_booking',  
         charset='utf8mb4',
         cursorclass=pymysql.cursors.DictCursor
     )
@@ -175,17 +175,9 @@ def get_bookings_by_date(date):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# app.py
-# ... (rest of your code)
+
 
 if __name__ == '__main__':
     init_db()
     print("Server startar på http://localhost:5000")
-    # Change the run command below:
-    # app.run(debug=True, port=5000)
-    # ----------------------------
-    # TO THIS: 
-    # Hosting platforms will manage the host and port for you.
-    # We only need 'init_db()' to run when using __main__ locally, 
-    # but the platform handles the actual serving.
     print("Application ready to run on the server.")
