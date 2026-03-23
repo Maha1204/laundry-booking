@@ -4,260 +4,319 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tvättstuga Bokning</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* --- COLOR PALETTE: "Clean Night" --- */
-            --bg-color: #0B1120;
-            --card-bg: #151E32;
-            --border-color: #2D3A54;
+            --bg: #0B1120;
+            --card: #151E32;
+            --border: #2D3A54;
             --primary: #38bdf8;
             --primary-hover: #0ea5e9;
-            --text-main: #f1f5f9;
-            --text-muted: #94a3b8;
-            
-            /* Booked State */
+            --text: #f1f5f9;
+            --muted: #94a3b8;
             --booked-bg: #1e293b;
             --booked-border: #334155;
             --booked-text: #64748b;
-            
-            /* Delete/Danger */
             --danger: #ef4444;
-            --danger-hover: #f87171;
-            
-            /* Alert/Rules */
-            --warning-bg: #422006;
-            --warning-text: #fbbf24;
+            --success: #22c55e;
+            --admin: #a78bfa;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
+            font-family: 'DM Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
             min-height: 100vh;
-            padding: 20px 15px; /* Reduced padding */
+            padding: 20px 15px;
         }
 
-        .container {
-            max-width: 1400px; /* Increased width for better table fit */
-            margin: 0 auto;
-        }
+        .container { max-width: 1400px; margin: 0 auto; }
 
-        /* --- Header --- */
-        header { 
-            text-align: center; 
-            margin-bottom: 20px; /* Reduced from 40px */
-            display: flex;
-            justify-content: center;
-            align-items: baseline;
-            gap: 15px;
-        }
-        header h1 { font-size: 1.8em; color: var(--text-main); letter-spacing: -0.5px; }
-        header p { color: var(--text-muted); font-size: 1em; }
-
-        /* --- Rules Section --- */
-        .rules-banner {
-            background: rgba(251, 191, 36, 0.05);
-            border: 1px solid rgba(251, 191, 36, 0.2);
-            color: var(--warning-text);
-            padding: 10px 16px; /* Reduced padding */
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            font-size: 0.9em;
-        }
-
-        /* --- Calendar Controls --- */
-        .calendar-controls {
+        /* Header */
+        header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-            background: var(--card-bg);
-            padding: 8px 12px;
+            margin-bottom: 20px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .header-title { display: flex; align-items: baseline; gap: 10px; }
+        header h1 { font-size: 1.8em; letter-spacing: -0.5px; }
+        header p { color: var(--muted); font-size: 1em; }
+
+        /* User Bar */
+        .user-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--card);
+            border: 1px solid var(--border);
             border-radius: 10px;
-            border: 1px solid var(--border-color);
+            padding: 8px 14px;
         }
-        
+        .user-badge { display: flex; align-items: center; gap: 6px; font-size: 0.85em; font-weight: 600; }
+        .user-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
+        .user-badge.admin .dot { background: var(--admin); }
+        .user-name { color: var(--text); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .user-apt { color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.9em; }
+        .btn-logout {
+            background: transparent; border: none; color: var(--muted);
+            cursor: pointer; padding: 4px 8px; border-radius: 4px;
+            font-size: 0.8em; transition: color 0.2s; font-family: 'DM Sans', sans-serif;
+        }
+        .btn-logout:hover { color: var(--danger); }
+
+        /* Login Screen */
+        .login-screen {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; min-height: 60vh; gap: 16px;
+        }
+        .login-card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 14px; padding: 32px; width: 100%; max-width: 380px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+        .login-tabs {
+            display: flex; border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+        .tab-btn {
+            flex: 1; padding: 8px; background: transparent; border: none;
+            color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 0.9em;
+            font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent;
+            margin-bottom: -1px; transition: all 0.2s;
+        }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-btn.admin-tab.active { color: var(--admin); border-bottom-color: var(--admin); }
+
+        /* Rules */
+        .rules-banner {
+            background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.2);
+            color: #fbbf24; padding: 10px 16px; border-radius: 8px; margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 0.9em;
+        }
+
+        /* Calendar Controls */
+        .calendar-controls {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px; background: var(--card); padding: 8px 12px;
+            border-radius: 10px; border: 1px solid var(--border);
+        }
         .week-btn {
-            background: transparent;
-            color: var(--primary);
-            border: 1px solid transparent;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.9em;
-            transition: all 0.2s;
+            background: transparent; color: var(--primary); border: 1px solid transparent;
+            padding: 6px 12px; border-radius: 6px; cursor: pointer;
+            font-weight: 600; font-size: 0.9em; transition: all 0.2s;
         }
-        .week-btn:hover { background: rgba(56, 189, 248, 0.1); }
-        
-        #currentWeekDisplay { font-size: 1em; font-weight: 600; color: var(--text-main); }
+        .week-btn:hover { background: rgba(56,189,248,0.1); }
+        #currentWeekDisplay { font-size: 1em; font-weight: 600; }
 
-        /* --- Calendar Grid --- */
+        /* Calendar Grid */
         .calendar-wrapper {
-            overflow-x: auto;
-            background: var(--card-bg);
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            overflow-x: auto; background: var(--card); border-radius: 12px;
+            border: 1px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.2);
         }
-
         .calendar-grid {
             display: grid;
-            /* ADJUSTMENT: Smaller time column (60px) and responsive day columns */
             grid-template-columns: 60px repeat(7, minmax(110px, 1fr));
-            gap: 1px;
-            background: var(--border-color);
+            gap: 1px; background: var(--border);
         }
-
         .grid-header, .grid-time, .grid-cell {
-            background: var(--card-bg);
-            padding: 10px 6px; /* Tighter padding */
-            text-align: center;
+            background: var(--card); padding: 10px 6px; text-align: center;
         }
-
         .grid-header {
-            font-weight: 600;
-            color: var(--primary);
-            font-size: 0.85em;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            position: sticky;
-            top: 0;
+            font-weight: 600; color: var(--primary); font-size: 0.85em;
+            text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0;
         }
-
         .grid-time {
-            font-weight: 500;
-            color: var(--text-muted);
-            font-size: 0.8em;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-weight: 500; color: var(--muted); font-size: 0.8em;
+            font-family: 'DM Mono', monospace;
+            display: flex; align-items: center; justify-content: center;
         }
-
-        /* --- Slot Styles --- */
         .slot-btn {
-            width: 100%; 
-            padding: 8px; 
-            border-radius: 6px;
-            font-size: 0.85em; 
-            font-weight: 500; 
-            cursor: pointer;
-            transition: all 0.2s;
-            background: transparent;
-            border: 1px dashed rgba(56, 189, 248, 0.3); /* Dashed looks lighter */
-            color: var(--primary);
-            height: 100%;
-            min-height: 50px; /* Ensures clickability */
+            width: 100%; padding: 8px; border-radius: 6px; font-size: 0.85em;
+            font-weight: 500; cursor: pointer; transition: all 0.2s;
+            background: transparent; border: 1px dashed rgba(56,189,248,0.3);
+            color: var(--primary); height: 100%; min-height: 50px;
         }
+        .slot-btn:hover { background: var(--primary); color: #0f172a; border-style: solid; }
 
-        .slot-btn:hover {
-            background: var(--primary); 
-            color: #0f172a;
-            border-style: solid;
-            border-color: var(--primary);
-        }
-
-        /* --- Booked Card with Delete --- */
         .slot-card {
-            background: var(--booked-bg);
-            color: var(--booked-text);
-            padding: 8px;
-            padding-right: 20px; /* Space for X button */
-            border-radius: 6px;
-            font-size: 0.8em;
-            text-align: left;
-            border: 1px solid var(--booked-border);
-            height: 100%;
-            min-height: 50px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
+            background: var(--booked-bg); color: var(--booked-text); padding: 8px;
+            padding-right: 20px; border-radius: 6px; font-size: 0.8em; text-align: left;
+            border: 1px solid var(--booked-border); height: 100%; min-height: 50px;
+            display: flex; flex-direction: column; justify-content: center;
+            position: relative; overflow: hidden;
         }
-        
-        .slot-card strong { display: block; margin-bottom: 2px; color: var(--text-muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .slot-card.own-booking { border-color: rgba(56,189,248,0.4); }
+        .slot-card strong {
+            display: block; margin-bottom: 2px; color: var(--muted); font-weight: 600;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
         .slot-card span { font-size: 0.9em; display: block; white-space: nowrap; }
-
-        /* The Delete (Unbook) Button */
         .unbook-btn {
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            width: 20px;
-            background: rgba(255,255,255,0.03);
-            border: none;
-            border-left: 1px solid var(--booked-border);
-            color: var(--danger);
-            font-size: 1.1em;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
+            position: absolute; top: 0; right: 0; bottom: 0; width: 20px;
+            background: rgba(255,255,255,0.03); border: none;
+            border-left: 1px solid var(--booked-border); color: var(--danger);
+            font-size: 1.1em; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s;
         }
-        
-        .unbook-btn:hover {
-            background: rgba(239, 68, 68, 0.15);
-        }
+        .unbook-btn:hover { background: rgba(239,68,68,0.15); }
 
-        /* --- Modal --- */
+        /* Admin Panel */
+        .admin-panel {
+            background: var(--card); border: 1px solid rgba(167,139,250,0.3);
+            border-radius: 12px; padding: 20px; margin-bottom: 20px;
+        }
+        .admin-panel h3 { color: var(--admin); font-size: 1em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .timeslot-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .timeslot-item {
+            display: flex; align-items: center; gap: 6px; background: var(--bg);
+            border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px;
+            font-family: 'DM Mono', monospace; font-size: 0.85em;
+        }
+        .timeslot-item.inactive { opacity: 0.4; }
+        .toggle-btn {
+            background: transparent; border: none; cursor: pointer;
+            font-size: 1em; padding: 0; color: var(--success); transition: color 0.2s;
+        }
+        .timeslot-item.inactive .toggle-btn { color: var(--muted); }
+        .delete-slot-btn {
+            background: transparent; border: none; color: var(--danger);
+            cursor: pointer; font-size: 0.9em; opacity: 0.5; transition: opacity 0.2s;
+        }
+        .delete-slot-btn:hover { opacity: 1; }
+        .add-slot-form { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+        .add-slot-form input {
+            background: var(--bg); border: 1px solid var(--border); color: var(--text);
+            padding: 8px 12px; border-radius: 6px; font-family: 'DM Mono', monospace;
+            font-size: 0.9em; width: 100px;
+        }
+        .add-slot-form input:focus { outline: none; border-color: var(--admin); }
+        .btn-admin {
+            background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.3);
+            color: var(--admin); padding: 8px 14px; border-radius: 6px;
+            font-size: 0.85em; font-weight: 600; cursor: pointer; transition: all 0.2s;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .btn-admin:hover { background: rgba(167,139,250,0.2); }
+
+        /* Modal */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(11, 17, 32, 0.85);
+            background: rgba(11,17,32,0.85);
             display: none; justify-content: center; align-items: center;
             z-index: 100; backdrop-filter: blur(5px);
         }
-
         .modal-content {
-            background: var(--card-bg); padding: 24px; border-radius: 12px;
-            width: 90%; max-width: 350px; /* Smaller modal */
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--border-color);
+            background: var(--card); padding: 24px; border-radius: 12px;
+            width: 90%; max-width: 350px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            border: 1px solid var(--border);
         }
-
         .modal-header { margin-bottom: 20px; text-align: center; }
-        .modal-header h2 { color: var(--text-main); font-size: 1.3em; margin-bottom: 5px; }
+        .modal-header h2 { font-size: 1.3em; margin-bottom: 5px; }
         .modal-header p { color: var(--primary); font-weight: 500; font-size: 0.9em; }
-        
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 0.85em; }
-        .form-group input {
-            width: 100%; padding: 10px; background: var(--bg-color); 
-            border: 1px solid var(--border-color); color: white; border-radius: 6px; font-size: 0.95em;
+        .booking-preview {
+            background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+            padding: 12px 14px; margin-bottom: 16px; font-size: 0.85em;
         }
-        .form-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
-
+        .booking-preview .row { display: flex; justify-content: space-between; color: var(--muted); margin-bottom: 4px; }
+        .booking-preview .row:last-child { margin-bottom: 0; }
+        .booking-preview .val { color: var(--text); font-weight: 500; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 0.85em; }
+        .form-group input {
+            width: 100%; padding: 10px; background: var(--bg); border: 1px solid var(--border);
+            color: white; border-radius: 6px; font-size: 0.95em; font-family: 'DM Sans', sans-serif;
+        }
+        .form-group input:focus { outline: none; border-color: var(--primary); }
         .btn-primary {
             width: 100%; padding: 12px; background: var(--primary); color: #0f172a;
-            border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.95em;
+            border: none; border-radius: 6px; font-weight: 700; cursor: pointer;
+            font-size: 0.95em; font-family: 'DM Sans', sans-serif; transition: background 0.2s;
         }
+        .btn-primary:hover { background: var(--primary-hover); }
         .btn-cancel {
-            width: 100%; padding: 10px; margin-top: 5px; background: transparent; 
-            color: var(--text-muted); border: none; cursor: pointer; font-size: 0.9em;
+            width: 100%; padding: 10px; margin-top: 5px; background: transparent;
+            color: var(--muted); border: none; cursor: pointer; font-size: 0.9em;
+            font-family: 'DM Sans', sans-serif;
         }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 24px; left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--card); border: 1px solid var(--border);
+            color: var(--text); padding: 10px 20px; border-radius: 8px;
+            font-size: 0.9em; opacity: 0; transition: all 0.3s;
+            z-index: 999; pointer-events: none;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
     </style>
 </head>
 <body>
+<div class="container">
 
-    <div class="container">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen" style="display:none;">
+        <div style="text-align:center; margin-bottom: 8px;">
+            <h1 style="font-size:1.8em;">Tvättstugan</h1>
+            <p style="color:var(--muted); margin-top:6px;">Logga in för att boka</p>
+        </div>
+        <div class="login-card">
+            <div class="login-tabs">
+                <button class="tab-btn active" onclick="switchTab('user')">Boende</button>
+                <button class="tab-btn admin-tab" onclick="switchTab('admin')">Admin</button>
+            </div>
+            <div id="userLoginForm">
+                <div class="form-group">
+                    <label>Ditt Namn</label>
+                    <input type="text" id="loginName" placeholder="Förnamn Efternamn" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Lägenhetsnummer</label>
+                    <input type="text" id="loginApt" placeholder="T.ex. 1201" autocomplete="off">
+                </div>
+                <button class="btn-primary" onclick="doUserLogin()">Logga In</button>
+            </div>
+            <div id="adminLoginForm" style="display:none;">
+                <div class="form-group">
+                    <label>Admin-lösenord</label>
+                    <input type="password" id="adminPassword" placeholder="••••••••" autocomplete="off">
+                </div>
+                <button class="btn-primary" style="background:var(--admin);color:#1a0f3a;" onclick="doAdminLogin()">Logga in som Admin</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" style="display:none;">
         <header>
-            <h1>Tvättstugan</h1>
-            <p style="align-self: center;">Bokning</p>
+            <div class="header-title">
+                <h1>Tvättstugan</h1>
+                <p>Bokning</p>
+            </div>
+            <div class="user-bar" id="userBar"></div>
         </header>
 
         <div class="rules-banner">
-            <span style="font-size: 1.2em;">ℹ️</span>
-            <div>
-                Lämna tvättstugan ren och fin. Respektera tiderna.
+            <span style="font-size:1.2em;">ℹ️</span>
+            <div>Lämna tvättstugan ren och fin. Respektera tiderna.</div>
+        </div>
+
+        <!-- Admin Panel -->
+        <div id="adminPanel" class="admin-panel" style="display:none;">
+            <h3>🔧 Admin — Hantera Tidsluckor</h3>
+            <div id="timeslotList" class="timeslot-list"></div>
+            <div class="add-slot-form">
+                <input type="text" id="newSlotInput" placeholder="T.ex. 22-01" maxlength="10">
+                <button class="btn-admin" onclick="addSlot()">+ Lägg till</button>
+                <button class="btn-admin" onclick="saveSlots()">💾 Spara</button>
             </div>
         </div>
 
@@ -268,220 +327,350 @@
         </div>
 
         <div class="calendar-wrapper">
-            <div id="calendarGrid" class="calendar-grid">
-                </div>
+            <div id="calendarGrid" class="calendar-grid"></div>
         </div>
     </div>
 
-    <div id="bookingModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Boka Tid</h2>
-                <p id="modalDateDisplay"></p>
-            </div>
-            <form id="bookingForm">
-                <input type="hidden" id="selectedDate">
-                <input type="hidden" id="selectedTime">
-                
-                <div class="form-group">
-                    <label>Ditt Namn</label>
-                    <input type="text" id="name" placeholder="Förnamn Efternamn" required autocomplete="off">
-                </div>
-                <div class="form-group">
-                    <label>Lägenhetsnummer</label>
-                    <input type="text" id="apartment" placeholder="T.ex. 1201" required autocomplete="off">
-                </div>
-                <button type="submit" class="btn-primary">Bekräfta</button>
-                <button type="button" class="btn-cancel" onclick="closeModal()">Avbryt</button>
-            </form>
+</div>
+
+<!-- Booking Modal -->
+<div id="bookingModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Boka Tid</h2>
+            <p id="modalDateDisplay"></p>
         </div>
+        <div class="booking-preview" id="bookingPreview"></div>
+        <input type="hidden" id="selectedDate">
+        <input type="hidden" id="selectedTime">
+        <button class="btn-primary" onclick="confirmBooking()">Bekräfta Bokning</button>
+        <button class="btn-cancel" onclick="closeModal()">Avbryt</button>
     </div>
+</div>
 
-    <script>
-        const API_URL = 'https://laundry-booking-gspj.onrender.com/api';
-        // Now only using the short labels as per your image and backend logic
-        const timeSlots = ['07-10', '10-13', '13-16', '16-19', '19-22'];
-        let currentWeekStart = new Date();
-        let allBookings = [];
+<div class="toast" id="toast"></div>
 
-        // Adjust to Monday
-        const day = currentWeekStart.getDay(); 
-        const diff = currentWeekStart.getDate() - day + (day == 0 ? -6 : 1);
-        currentWeekStart.setDate(diff);
+<script>
+const API_URL = 'https://laundry-booking-gspj.onrender.com/api';
 
-        async function init() {
-            await fetchBookings();
+let currentUser = null;
+let allBookings = [];
+let timeSlots = [];
+let allTimeSlots = [];
+let currentWeekStart = getMonday(new Date());
+
+// ── Toast ────────────────────────────────────────────────────────────
+function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => t.className = 'toast', 2800);
+}
+
+// ── Auth ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+        b.classList.toggle('active', (tab === 'user' && i === 0) || (tab === 'admin' && i === 1));
+    });
+    document.getElementById('userLoginForm').style.display = tab === 'user' ? '' : 'none';
+    document.getElementById('adminLoginForm').style.display = tab === 'admin' ? '' : 'none';
+}
+
+async function doUserLogin() {
+    const name = document.getElementById('loginName').value.trim();
+    const apt  = document.getElementById('loginApt').value.trim();
+    if (!name || !apt) { showToast('Fyll i namn och lägenhetsnummer', 'error'); return; }
+    try {
+        const res = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST', credentials: 'include',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name, apartment: apt })
+        });
+        const data = await res.json();
+        if (res.ok) { currentUser = data; showMain(); }
+        else showToast(data.error, 'error');
+    } catch { showToast('Serverfel', 'error'); }
+}
+
+async function doAdminLogin() {
+    const pwd = document.getElementById('adminPassword').value;
+    try {
+        const res = await fetch(`${API_URL}/auth/admin`, {
+            method: 'POST', credentials: 'include',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ password: pwd })
+        });
+        const data = await res.json();
+        if (res.ok) { currentUser = data; showMain(); }
+        else showToast(data.error, 'error');
+    } catch { showToast('Serverfel', 'error'); }
+}
+
+async function doLogout() {
+    await fetch(`${API_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
+    currentUser = null;
+    document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+}
+
+async function checkSession() {
+    try {
+        const res = await fetch(`${API_URL}/auth/me`, { credentials: 'include' });
+        const data = await res.json();
+        if (data.logged_in) { currentUser = data; showMain(); }
+        else document.getElementById('loginScreen').style.display = 'flex';
+    } catch {
+        document.getElementById('loginScreen').style.display = 'flex';
+    }
+}
+
+async function showMain() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = '';
+    renderUserBar();
+    await fetchTimeSlots();
+    await fetchBookings();
+    if (currentUser.is_admin) {
+        document.getElementById('adminPanel').style.display = '';
+        renderAdminSlots();
+    }
+    renderCalendar();
+}
+
+function renderUserBar() {
+    const bar = document.getElementById('userBar');
+    if (!currentUser) { bar.innerHTML = ''; return; }
+    const isAdmin = currentUser.is_admin;
+    bar.innerHTML = `
+        <div class="user-badge ${isAdmin ? 'admin' : ''}">
+            <div class="dot"></div>
+            <span class="user-name">${escHtml(currentUser.name)}</span>
+            ${!isAdmin
+                ? `<span class="user-apt">#${escHtml(currentUser.apartment)}</span>`
+                : `<span style="color:var(--admin);font-size:0.8em;margin-left:2px;">ADMIN</span>`}
+        </div>
+        <button class="btn-logout" onclick="doLogout()">↩ Logga ut</button>
+    `;
+}
+
+// ── Time Slots ────────────────────────────────────────────────────────
+async function fetchTimeSlots() {
+    try {
+        const res = await fetch(`${API_URL}/timeslots`);
+        allTimeSlots = await res.json();
+        timeSlots = allTimeSlots.filter(s => s.is_active).map(s => s.slot);
+    } catch {
+        timeSlots = ['07-10','10-13','13-16','16-19','19-22'];
+    }
+}
+
+function renderAdminSlots() {
+    const list = document.getElementById('timeslotList');
+    list.innerHTML = '';
+    allTimeSlots.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'timeslot-item' + (s.is_active ? '' : ' inactive');
+        div.innerHTML = `
+            <button class="toggle-btn" onclick="toggleSlot('${s.slot}')" title="${s.is_active ? 'Inaktivera' : 'Aktivera'}">${s.is_active ? '✓' : '○'}</button>
+            <span>${escHtml(s.slot)}</span>
+            <button class="delete-slot-btn" onclick="removeSlotLocal('${s.slot}')" title="Ta bort">✕</button>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function toggleSlot(slot) {
+    const s = allTimeSlots.find(x => x.slot === slot);
+    if (s) { s.is_active = !s.is_active; renderAdminSlots(); }
+}
+
+function removeSlotLocal(slot) {
+    allTimeSlots = allTimeSlots.filter(x => x.slot !== slot);
+    renderAdminSlots();
+}
+
+function addSlot() {
+    const input = document.getElementById('newSlotInput');
+    const val = input.value.trim();
+    if (!val) return;
+    if (allTimeSlots.find(x => x.slot === val)) { showToast('Finns redan', 'error'); return; }
+    allTimeSlots.push({ slot: val, is_active: true });
+    renderAdminSlots();
+    input.value = '';
+}
+
+async function saveSlots() {
+    try {
+        const res = await fetch(`${API_URL}/timeslots`, {
+            method: 'PUT', credentials: 'include',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(allTimeSlots)
+        });
+        if (res.ok) {
+            showToast('Tidsluckor sparade!', 'success');
+            await fetchTimeSlots();
             renderCalendar();
+            renderAdminSlots();
+        } else {
+            showToast('Fel vid sparning', 'error');
         }
+    } catch { showToast('Serverfel', 'error'); }
+}
 
-        async function fetchBookings() {
-            try {
-                const response = await fetch(`${API_URL}/bookings`);
-                allBookings = await response.json();
-            } catch (error) {
-                console.error('Error fetching bookings:', error);
+// ── Bookings ──────────────────────────────────────────────────────────
+async function fetchBookings() {
+    try {
+        const res = await fetch(`${API_URL}/bookings`);
+        allBookings = await res.json();
+    } catch { console.error('Fetch error'); }
+}
+
+// ── Calendar ──────────────────────────────────────────────────────────
+function getMonday(d) {
+    const day = d.getDay();
+    const m = new Date(d);
+    m.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
+    return m;
+}
+
+function changeWeek(offset) {
+    currentWeekStart.setDate(currentWeekStart.getDate() + offset * 7);
+    renderCalendar();
+}
+
+function renderCalendar() {
+    const grid = document.getElementById('calendarGrid');
+    grid.innerHTML = '';
+    const swedishDays = ['MÅN','TIS','ONS','TOR','FRE','LÖR','SÖN'];
+    const weekDates = [];
+    const temp = new Date(currentWeekStart);
+    const endDate = new Date(temp);
+    endDate.setDate(endDate.getDate() + 6);
+    document.getElementById('currentWeekDisplay').textContent =
+        `v.${getWeekNumber(temp)} (${fmt(temp)} – ${fmt(endDate)})`;
+
+    grid.appendChild(createCell('div','grid-header','TID'));
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(temp);
+        const label = `${swedishDays[i]} ${d.getDate()}/${d.getMonth()+1}`;
+        weekDates.push({ date: d.toISOString().split('T')[0], display: label });
+        grid.appendChild(createCell('div','grid-header', label));
+        temp.setDate(temp.getDate() + 1);
+    }
+
+    const slots = timeSlots.length ? timeSlots : ['07-10','10-13','13-16','16-19','19-22'];
+    slots.forEach(slot => {
+        grid.appendChild(createCell('div','grid-time', slot));
+        weekDates.forEach(dayObj => {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            const booking = allBookings.find(b => b.date === dayObj.date && b.time === slot);
+            const isPast  = new Date(dayObj.date) < new Date().setHours(0,0,0,0);
+
+            if (booking) {
+                const isOwn = !currentUser.is_admin &&
+                    booking.name === currentUser.name &&
+                    booking.apartment === currentUser.apartment;
+                const canDelete = currentUser.is_admin || isOwn;
+                cell.innerHTML = `
+                    <div class="slot-card ${isOwn ? 'own-booking' : ''}">
+                        ${canDelete ? `<button class="unbook-btn" onclick="deleteBooking(${booking.id})" title="Avboka">×</button>` : ''}
+                        <strong>${escHtml(booking.name)}</strong>
+                        <span>${escHtml(booking.apartment)}</span>
+                    </div>`;
+            } else if (isPast) {
+                cell.innerHTML = `<span style="color:#334155;font-size:1.2em;">–</span>`;
+            } else {
+                const btn = document.createElement('button');
+                btn.className = 'slot-btn';
+                btn.textContent = '+';
+                btn.onclick = () => openModal(dayObj.date, slot, dayObj.display);
+                cell.appendChild(btn);
             }
+            grid.appendChild(cell);
+        });
+    });
+}
+
+function createCell(tag, cls, text) {
+    const el = document.createElement(tag);
+    el.className = cls; el.textContent = text; return el;
+}
+function fmt(d) { return `${d.getDate()}/${d.getMonth()+1}`; }
+function getWeekNumber(d) {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const y = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+    return Math.ceil(((d - y)/86400000 + 1)/7);
+}
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Modal ────────────────────────────────────────────────────────────
+const modal = document.getElementById('bookingModal');
+
+function openModal(date, time, dayDisplay) {
+    document.getElementById('selectedDate').value = date;
+    document.getElementById('selectedTime').value = time;
+    document.getElementById('modalDateDisplay').textContent = `${dayDisplay} • ${time}`;
+    document.getElementById('bookingPreview').innerHTML = `
+        <div class="row"><span>Namn</span><span class="val">${escHtml(currentUser.name)}</span></div>
+        <div class="row"><span>Lägenhet</span><span class="val">#${escHtml(currentUser.apartment)}</span></div>
+        <div class="row"><span>Tid</span><span class="val">${time}</span></div>
+        <div class="row"><span>Datum</span><span class="val">${date}</span></div>
+    `;
+    modal.style.display = 'flex';
+}
+
+function closeModal() { modal.style.display = 'none'; }
+
+async function confirmBooking() {
+    const date = document.getElementById('selectedDate').value;
+    const time = document.getElementById('selectedTime').value;
+    try {
+        const res = await fetch(`${API_URL}/bookings`, {
+            method: 'POST', credentials: 'include',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ date, time })
+        });
+        if (res.ok) {
+            closeModal();
+            showToast('Bokning bekräftad!', 'success');
+            await fetchBookings(); renderCalendar();
+        } else {
+            const err = await res.json();
+            showToast(err.error || 'Fel vid bokning', 'error');
         }
+    } catch { showToast('Kunde inte ansluta', 'error'); }
+}
 
-        function changeWeek(offset) {
-            currentWeekStart.setDate(currentWeekStart.getDate() + (offset * 7));
-            renderCalendar();
+async function deleteBooking(id) {
+    if (!confirm('Vill du avboka denna tid?')) return;
+    try {
+        const res = await fetch(`${API_URL}/bookings/${id}`, {
+            method: 'DELETE', credentials: 'include'
+        });
+        if (res.ok) {
+            showToast('Bokning avbokad', 'success');
+            await fetchBookings(); renderCalendar();
+        } else {
+            const err = await res.json();
+            showToast(err.error || 'Kunde inte avboka', 'error');
         }
+    } catch { showToast('Serverfel', 'error'); }
+}
 
-        function renderCalendar() {
-            const grid = document.getElementById('calendarGrid');
-            grid.innerHTML = '';
-            
-            const weekDates = [];
-            const tempDate = new Date(currentWeekStart);
-            const swedishDays = ['MÅN', 'TIS', 'ONS', 'TOR', 'FRE', 'LÖR', 'SÖN'];
-            
-            const endDate = new Date(tempDate);
-            endDate.setDate(endDate.getDate() + 6);
-            document.getElementById('currentWeekDisplay').textContent = 
-                `v.${getWeekNumber(tempDate)} (${formatDateReadable(tempDate)} - ${formatDateReadable(endDate)})`;
+modal.onclick = e => { if (e.target === modal) closeModal(); };
 
-            // Header
-            grid.appendChild(createCell('div', 'grid-header', 'TID'));
-            for (let i = 0; i < 7; i++) {
-                // Ensure date object is set for the start of the current day for accurate date math
-                const currentDate = new Date(tempDate);
-                
-                // ADJUSTMENT: Use the uppercase Swedish day name from the array for the header
-                const dayName = swedishDays[i]; 
-                
-                // Format: MÅN 24/11
-                const displayDate = `${dayName} ${currentDate.getDate()}/${currentDate.getMonth() + 1}`;
-                
-                weekDates.push({ 
-                    date: currentDate.toISOString().split('T')[0], 
-                    display: displayDate 
-                });
-                grid.appendChild(createCell('div', 'grid-header', displayDate));
-                tempDate.setDate(tempDate.getDate() + 1);
-            }
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const adminForm = document.getElementById('adminLoginForm');
+    if (adminForm && adminForm.style.display !== 'none') doAdminLogin();
+    else doUserLogin();
+});
 
-            // Time slots
-            // Iterating directly over the desired display time slots
-            timeSlots.forEach(timeSlot => {
-                const shortTime = timeSlot; // This is the '07-10', '10-13', etc.
-                grid.appendChild(createCell('div', 'grid-time', shortTime));
-
-                weekDates.forEach(dayObj => {
-                    const cell = document.createElement('div');
-                    cell.className = 'grid-cell';
-                    
-                    // Check for booking using the *short time slot* which is stored in the DB
-                    const booking = allBookings.find(b => b.date === dayObj.date && b.time === shortTime);
-                    const isPastDate = new Date(dayObj.date) < new Date().setHours(0,0,0,0);
-                    
-                    if (booking) {
-                        cell.innerHTML = `
-                            <div class="slot-card">
-                                <button class="unbook-btn" onclick="deleteBooking(${booking.id})" title="Avboka">×</button>
-                                <strong>${booking.name}</strong>
-                                <span>${booking.apartment}</span>
-                            </div>
-                        `;
-                    } else if (isPastDate) {
-                         cell.innerHTML = `<span style="color:#334155; font-size:1.2em;">-</span>`;
-                    } else {
-                        const btn = document.createElement('button');
-                        btn.className = 'slot-btn';
-                        btn.textContent = '+';
-                        // Use the short time slot for opening the modal
-                        btn.onclick = () => openModal(dayObj.date, shortTime);
-                        cell.appendChild(btn);
-                    }
-                    grid.appendChild(cell);
-                });
-            });
-        }
-
-        function createCell(tag, className, content) {
-            const el = document.createElement(tag);
-            el.className = className;
-            el.textContent = content;
-            return el;
-        }
-
-        function formatDateReadable(date) {
-            return `${date.getDate()}/${date.getMonth() + 1}`;
-        }
-        
-        function getWeekNumber(d) {
-            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
-            var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-            var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
-            return weekNo;
-        }
-
-        // --- Booking Actions ---
-
-        const modal = document.getElementById('bookingModal');
-
-        function openModal(date, time) {
-            document.getElementById('selectedDate').value = date;
-            document.getElementById('selectedTime').value = time;
-            document.getElementById('modalDateDisplay').textContent = `${date} • ${time}`;
-            modal.style.display = 'flex';
-            document.getElementById('name').focus();
-        }
-
-        function closeModal() {
-            modal.style.display = 'none';
-            document.getElementById('bookingForm').reset();
-        }
-
-        document.getElementById('bookingForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const data = {
-                name: document.getElementById('name').value,
-                apartment: document.getElementById('apartment').value,
-                date: document.getElementById('selectedDate').value,
-                // Time is now guaranteed to be the short format (e.g., '07-10')
-                time: document.getElementById('selectedTime').value 
-            };
-
-            try {
-                const response = await fetch(`${API_URL}/bookings`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
-                });
-
-                if (response.ok) {
-                    closeModal();
-                    await fetchBookings();
-                    renderCalendar();
-                } else {
-                    const err = await response.json();
-                    alert(err.error || 'Fel vid bokning');
-                }
-            } catch (error) {
-                alert('Kunde inte ansluta till servern');
-            }
-        };
-
-        async function deleteBooking(id) {
-            if (!confirm('Vill du verkligen avboka denna tid?')) return;
-            
-            try {
-                const response = await fetch(`${API_URL}/bookings/${id}`, { method: 'DELETE' });
-                if (response.ok) {
-                    await fetchBookings(); 
-                    renderCalendar();     
-                } else {
-                    alert('Kunde inte avboka.');
-                }
-            } catch (error) {
-                alert('Serverfel vid avbokning.');
-            }
-        }
-
-        modal.onclick = (e) => { if (e.target === modal) closeModal(); }
-        init();
-    </script>
+checkSession();
+</script>
 </body>
 </html>
