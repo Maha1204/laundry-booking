@@ -20,6 +20,7 @@
             --danger: #ef4444;
             --success: #22c55e;
             --admin: #a78bfa;
+            --warning: #fbbf24;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -83,11 +84,23 @@
         .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
         .tab-btn.admin-tab.active { color: var(--admin); border-bottom-color: var(--admin); }
 
-        /* Rules */
+        /* Banners */
         .rules-banner {
             background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.2);
-            color: #fbbf24; padding: 10px 16px; border-radius: 8px; margin-bottom: 20px;
+            color: var(--warning); padding: 10px 16px; border-radius: 8px; margin-bottom: 12px;
             display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 0.9em;
+        }
+
+        /* Week booking status banner */
+        .week-status {
+            border-radius: 8px; padding: 10px 16px; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 10px; font-size: 0.88em; font-weight: 500;
+        }
+        .week-status.has-booking {
+            background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5;
+        }
+        .week-status.no-booking {
+            background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.2); color: #86efac;
         }
 
         /* Calendar Controls */
@@ -133,6 +146,11 @@
             color: var(--primary); height: 100%; min-height: 50px;
         }
         .slot-btn:hover { background: var(--primary); color: #0f172a; border-style: solid; }
+        .slot-btn.locked {
+            border-color: rgba(100,116,139,0.2); color: var(--booked-text);
+            cursor: not-allowed; opacity: 0.4;
+        }
+        .slot-btn.locked:hover { background: transparent; color: var(--booked-text); border-style: dashed; }
         .slot-card {
             background: var(--booked-bg); color: var(--booked-text); padding: 8px;
             padding-right: 20px; border-radius: 6px; font-size: 0.8em; text-align: left;
@@ -163,7 +181,8 @@
         }
         .modal-content {
             background: var(--card); padding: 24px; border-radius: 12px;
-            width: 90%; max-width: 350px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid var(--border);
+            width: 90%; max-width: 350px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            border: 1px solid var(--border);
         }
         .modal-header { margin-bottom: 20px; text-align: center; }
         .modal-header h2 { font-size: 1.3em; margin-bottom: 5px; }
@@ -190,7 +209,8 @@
         .btn-primary:hover { background: var(--primary-hover); }
         .btn-cancel {
             width: 100%; padding: 10px; margin-top: 5px; background: transparent;
-            color: var(--muted); border: none; cursor: pointer; font-size: 0.9em; font-family: 'DM Sans', sans-serif;
+            color: var(--muted); border: none; cursor: pointer; font-size: 0.9em;
+            font-family: 'DM Sans', sans-serif;
         }
 
         /* Toast */
@@ -253,7 +273,13 @@
 
         <div class="rules-banner">
             <span style="font-size:1.2em;">ℹ️</span>
-            <div>Lämna tvättstugan ren och fin. Respektera tiderna.</div>
+            <div>Lämna tvättstugan ren och fin. Respektera tiderna. Max <strong>1 bokning per vecka</strong>.</div>
+        </div>
+
+        <!-- Week status (only for non-admin) -->
+        <div id="weekStatus" class="week-status no-booking" style="display:none;">
+            <span id="weekStatusIcon">✓</span>
+            <span id="weekStatusText"></span>
         </div>
 
         <div class="calendar-controls">
@@ -268,7 +294,7 @@
     </div>
 </div>
 
-<!-- Booking Modal (only for non-admin) -->
+<!-- Booking Modal -->
 <div id="bookingModal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
@@ -288,15 +314,17 @@
 <script>
 const API_URL = 'https://laundry-booking-gspj.onrender.com/api';
 
-let currentUser  = null;
-let allBookings  = [];
-let timeSlots    = [];
+let currentUser      = null;
+let allBookings      = [];
+let timeSlots        = [];
 let currentWeekStart = getMonday(new Date());
+// Tracks which weeks the current user already has a booking { "2025-W12": bookingId }
+let userWeekBookings = {};
 
 // ── LocalStorage ─────────────────────────────────────────────────────
-function saveUser(u)  { localStorage.setItem('laundry_user', JSON.stringify(u)); }
-function loadUser()   { try { return JSON.parse(localStorage.getItem('laundry_user')); } catch { return null; } }
-function clearUser()  { localStorage.removeItem('laundry_user'); }
+function saveUser(u) { localStorage.setItem('laundry_user', JSON.stringify(u)); }
+function loadUser()  { try { return JSON.parse(localStorage.getItem('laundry_user')); } catch { return null; } }
+function clearUser() { localStorage.removeItem('laundry_user'); }
 
 // ── Toast ────────────────────────────────────────────────────────────
 function showToast(msg, type = '') {
@@ -334,16 +362,15 @@ async function doAdminLogin() {
             currentUser = { name: 'Admin', apartment: '', is_admin: true, adminPassword: pwd };
             saveUser(currentUser);
             showMain();
-        } else {
-            showToast('Fel lösenord', 'error');
-        }
+        } else { showToast('Fel lösenord', 'error'); }
     } catch { showToast('Serverfel', 'error'); }
 }
 
 function doLogout() {
-    clearUser(); currentUser = null;
+    clearUser(); currentUser = null; userWeekBookings = {};
     document.getElementById('mainApp').style.display    = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('weekStatus').style.display  = 'none';
 }
 
 async function showMain() {
@@ -352,6 +379,8 @@ async function showMain() {
     renderUserBar();
     await fetchTimeSlots();
     await fetchBookings();
+    buildUserWeekMap();
+    updateWeekStatus();
     renderCalendar();
 }
 
@@ -368,6 +397,53 @@ function renderUserBar() {
         </div>
         <button class="btn-logout" onclick="doLogout()">↩ Logga ut</button>
     `;
+}
+
+// ── Week key helper ───────────────────────────────────────────────────
+function weekKey(dateStr) {
+    // Returns "YYYY-Www" for a given date string
+    const d = new Date(dateStr + 'T12:00:00');
+    const mon = getMonday(d);
+    return mon.toISOString().split('T')[0]; // Monday date as key
+}
+
+function buildUserWeekMap() {
+    userWeekBookings = {};
+    if (currentUser.is_admin) return;
+    allBookings.forEach(b => {
+        if (b.name === currentUser.name && b.apartment === currentUser.apartment) {
+            userWeekBookings[weekKey(b.date)] = b.id;
+        }
+    });
+}
+
+function userHasBookingThisWeek(weekStartDate) {
+    const key = weekStartDate.toISOString().split('T')[0];
+    return userWeekBookings.hasOwnProperty(key);
+}
+
+// ── Week status banner ────────────────────────────────────────────────
+function updateWeekStatus() {
+    if (currentUser.is_admin) {
+        document.getElementById('weekStatus').style.display = 'none';
+        return;
+    }
+    const el     = document.getElementById('weekStatus');
+    const icon   = document.getElementById('weekStatusIcon');
+    const text   = document.getElementById('weekStatusText');
+    const hasIt  = userHasBookingThisWeek(currentWeekStart);
+    const weekLabel = `v.${getWeekNumber(currentWeekStart)}`;
+
+    el.style.display = '';
+    if (hasIt) {
+        el.className   = 'week-status has-booking';
+        icon.textContent = '🔒';
+        text.textContent = `Du har redan en bokning ${weekLabel}. Avboka om du vill byta tid.`;
+    } else {
+        el.className   = 'week-status no-booking';
+        icon.textContent = '✓';
+        text.textContent = `Du har ingen bokning ${weekLabel} — välj en ledig tid!`;
+    }
 }
 
 // ── Time Slots ────────────────────────────────────────────────────────
@@ -394,11 +470,13 @@ function getMonday(d) {
     const m = new Date(d);
     const day = m.getDay();
     m.setDate(m.getDate() - day + (day === 0 ? -6 : 1));
+    m.setHours(0,0,0,0);
     return m;
 }
 
 function changeWeek(offset) {
     currentWeekStart.setDate(currentWeekStart.getDate() + offset * 7);
+    updateWeekStatus();
     renderCalendar();
 }
 
@@ -406,9 +484,10 @@ function renderCalendar() {
     const grid = document.getElementById('calendarGrid');
     grid.innerHTML = '';
     const swedishDays = ['MÅN','TIS','ONS','TOR','FRE','LÖR','SÖN'];
-    const weekDates = [];
-    const temp = new Date(currentWeekStart);
-    const endDate = new Date(temp); endDate.setDate(endDate.getDate() + 6);
+    const weekDates   = [];
+    const temp        = new Date(currentWeekStart);
+    const endDate     = new Date(temp); endDate.setDate(endDate.getDate() + 6);
+
     document.getElementById('currentWeekDisplay').textContent =
         `v.${getWeekNumber(temp)} (${fmt(temp)} – ${fmt(endDate)})`;
 
@@ -421,17 +500,20 @@ function renderCalendar() {
         temp.setDate(temp.getDate() + 1);
     }
 
+    // Is this week already booked for the current user?
+    const weekLocked = !currentUser.is_admin && userHasBookingThisWeek(currentWeekStart);
+
     const slots = timeSlots.length ? timeSlots : ['07-10','10-13','13-16','16-19','19-22'];
     slots.forEach(slot => {
         grid.appendChild(createCell('div','grid-time', slot));
         weekDates.forEach(dayObj => {
-            const cell = document.createElement('div');
+            const cell    = document.createElement('div');
             cell.className = 'grid-cell';
             const booking = allBookings.find(b => b.date === dayObj.date && b.time === slot);
-            const isPast  = new Date(dayObj.date) < new Date().setHours(0,0,0,0);
+            const isPast  = new Date(dayObj.date + 'T00:00:00') < new Date().setHours(0,0,0,0);
 
             if (booking) {
-                const isOwn = !currentUser.is_admin &&
+                const isOwn    = !currentUser.is_admin &&
                     booking.name === currentUser.name &&
                     booking.apartment === currentUser.apartment;
                 const canDelete = currentUser.is_admin || isOwn;
@@ -443,16 +525,22 @@ function renderCalendar() {
                     </div>`;
             } else if (isPast) {
                 cell.innerHTML = `<span style="color:#334155;font-size:1.2em;">–</span>`;
+            } else if (currentUser.is_admin) {
+                // Admin sees empty slots as dashes
+                cell.innerHTML = `<span style="color:#334155;font-size:1.2em;">–</span>`;
+            } else if (weekLocked) {
+                // User already has a booking this week — show locked slot
+                const btn = document.createElement('button');
+                btn.className = 'slot-btn locked';
+                btn.textContent = '🔒';
+                btn.title = 'Du har redan en bokning denna vecka';
+                btn.onclick = () => showToast('Du har redan en bokning denna vecka', 'error');
+                cell.appendChild(btn);
             } else {
-                // Admin cannot make new bookings, only users can
-                if (!currentUser.is_admin) {
-                    const btn = document.createElement('button');
-                    btn.className = 'slot-btn'; btn.textContent = '+';
-                    btn.onclick = () => openModal(dayObj.date, slot, dayObj.display);
-                    cell.appendChild(btn);
-                } else {
-                    cell.innerHTML = `<span style="color:#334155;font-size:1.2em;">–</span>`;
-                }
+                const btn = document.createElement('button');
+                btn.className = 'slot-btn'; btn.textContent = '+';
+                btn.onclick = () => openModal(dayObj.date, slot, dayObj.display);
+                cell.appendChild(btn);
             }
             grid.appendChild(cell);
         });
@@ -503,7 +591,10 @@ async function confirmBooking() {
         if (res.ok) {
             closeModal();
             showToast('Bokning bekräftad!', 'success');
-            await fetchBookings(); renderCalendar();
+            await fetchBookings();
+            buildUserWeekMap();
+            updateWeekStatus();
+            renderCalendar();
         } else {
             const err = await res.json();
             showToast(err.error || 'Fel vid bokning', 'error');
@@ -522,7 +613,10 @@ async function deleteBooking(id) {
         const res = await fetch(`${API_URL}/bookings/${id}`, { method: 'DELETE', headers });
         if (res.ok) {
             showToast('Bokning avbokad', 'success');
-            await fetchBookings(); renderCalendar();
+            await fetchBookings();
+            buildUserWeekMap();
+            updateWeekStatus();
+            renderCalendar();
         } else {
             const err = await res.json();
             showToast(err.error || 'Kunde inte avboka', 'error');
