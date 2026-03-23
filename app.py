@@ -1,14 +1,13 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pymysql
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 app = Flask(__name__)
 CORS(app)
 
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
-
 DEFAULT_TIME_SLOTS = ['07-10', '10-13', '13-16', '16-19', '19-22']
 
 def connect_db():
@@ -21,12 +20,17 @@ def connect_db():
         cursorclass=pymysql.cursors.DictCursor
     )
 
+def get_week_bounds(date_obj):
+    """Return Monday and Sunday for the week containing date_obj."""
+    monday = date_obj - timedelta(days=date_obj.weekday())
+    sunday = monday + timedelta(days=6)
+    return monday, sunday
+
 def init_db():
     try:
         conn = connect_db()
         cursor = conn.cursor()
 
-        # Bookings table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS bookings (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -38,7 +42,6 @@ def init_db():
             )
         ''')
 
-        # Unique constraint
         cursor.execute('''
             SELECT COUNT(*) as count 
             FROM information_schema.statistics 
@@ -49,7 +52,6 @@ def init_db():
         if cursor.fetchone()['count'] == 0:
             cursor.execute('ALTER TABLE bookings ADD UNIQUE KEY unique_booking (date, time)')
 
-        # Time slots table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS time_slots (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -59,7 +61,6 @@ def init_db():
             )
         ''')
 
-        # Insert defaults if empty
         cursor.execute('SELECT COUNT(*) as count FROM time_slots')
         if cursor.fetchone()['count'] == 0:
             for i, slot in enumerate(DEFAULT_TIME_SLOTS):
@@ -75,16 +76,14 @@ def init_db():
     except Exception as e:
         print(f"Databasfel: {e}")
 
-# Run on startup (works with Gunicorn too)
 init_db()
 
 
-# ── Admin check helper ───────────────────────────────────────────────
 def is_admin():
     return request.headers.get('X-Admin-Password') == ADMIN_PASSWORD
 
 
-# ── Bookings ─────────────────────────────────────────────────────────
+# ── Bookings ──────────────────────────────────────────────────────────
 
 @app.route('/api/bookings', methods=['GET'])
 def get_bookings():
@@ -114,12 +113,34 @@ def create_booking():
                 return jsonify({'error': f'{field} är obligatoriskt'}), 400
 
         booking_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
-        if booking_date < datetime.now().date():
+        today = datetime.now().date()
+
+        if booking_date < today:
             return jsonify({'error': 'Kan inte boka datum i det förflutna'}), 400
 
+        # Get week bounds for the requested booking date
+        week_monday, week_sunday = get_week_bounds(booking_date)
+
+        # Check if this person already has a booking in that same week
         conn = connect_db()
         cursor = conn.cursor()
-        cursor.execute('SELECT id FROM bookings WHERE date = %s AND time = %s', (data['date'], data['time']))
+
+        cursor.execute('''
+            SELECT id FROM bookings
+            WHERE name = %s AND apartment = %s
+            AND date BETWEEN %s AND %s
+        ''', (data['name'], data['apartment'], week_monday, week_sunday))
+
+        if cursor.fetchone():
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Du har redan en bokning denna vecka. Du kan max boka en gång per vecka.'}), 400
+
+        # Check if the time slot itself is already taken
+        cursor.execute(
+            'SELECT id FROM bookings WHERE date = %s AND time = %s',
+            (data['date'], data['time'])
+        )
         if cursor.fetchone():
             cursor.close()
             conn.close()
@@ -134,6 +155,7 @@ def create_booking():
         cursor.close()
         conn.close()
         return jsonify({'message': 'Bokning skapad', 'id': booking_id}), 201
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -141,7 +163,6 @@ def create_booking():
 @app.route('/api/bookings/<int:booking_id>', methods=['DELETE'])
 def delete_booking(booking_id):
     try:
-        # Frontend sends who is trying to delete
         name      = request.headers.get('X-User-Name', '')
         apartment = request.headers.get('X-User-Apartment', '')
         admin     = is_admin()
@@ -185,6 +206,33 @@ def get_bookings_by_date(date):
         return jsonify({'error': str(e)}), 500
 
 
+# ── Check if user has booking in a given week ─────────────────────────
+
+@app.route('/api/bookings/week-check', methods=['POST'])
+def week_check():
+    """Returns any existing booking for a person in a given week."""
+    try:
+        data = request.get_json()
+        date_obj = datetime.strptime(data['date'], '%Y-%m-%d').date()
+        week_monday, week_sunday = get_week_bounds(date_obj)
+
+        conn = connect_db()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, DATE_FORMAT(date, '%Y-%m-%d') as date, time
+            FROM bookings
+            WHERE name = %s AND apartment = %s
+            AND date BETWEEN %s AND %s
+        ''', (data['name'], data['apartment'], week_monday, week_sunday))
+        existing = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        return jsonify({'has_booking': existing is not None, 'booking': existing}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # ── Time Slots ────────────────────────────────────────────────────────
 
 @app.route('/api/timeslots', methods=['GET'])
@@ -209,8 +257,6 @@ def update_timeslots():
         data = request.get_json()
         conn = connect_db()
         cursor = conn.cursor()
-
-        # Handle updates and new slots
         for i, item in enumerate(data):
             cursor.execute('SELECT slot FROM time_slots WHERE slot = %s', (item['slot'],))
             if cursor.fetchone():
@@ -219,15 +265,12 @@ def update_timeslots():
             else:
                 cursor.execute('INSERT INTO time_slots (slot, is_active, sort_order) VALUES (%s, %s, %s)',
                                (item['slot'], item['is_active'], i))
-
-        # Delete slots not in the new list
         new_slots = [item['slot'] for item in data]
         cursor.execute('SELECT slot FROM time_slots')
         existing = [row['slot'] for row in cursor.fetchall()]
         for slot in existing:
             if slot not in new_slots:
                 cursor.execute('DELETE FROM time_slots WHERE slot = %s', (slot,))
-
         conn.commit()
         cursor.close()
         conn.close()
@@ -246,3 +289,4 @@ def verify_admin():
 if __name__ == '__main__':
     print("Server startar på http://localhost:5000")
     app.run(debug=True)
+
