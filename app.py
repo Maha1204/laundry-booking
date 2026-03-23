@@ -1,18 +1,14 @@
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pymysql
 from datetime import datetime
 import os
-import hashlib
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
-CORS(app, supports_credentials=True)
+CORS(app)
 
-# Admin password (store hashed in production, use env var)
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
-# Default time slots
 DEFAULT_TIME_SLOTS = ['07-10', '10-13', '13-16', '16-19', '19-22']
 
 def connect_db():
@@ -30,6 +26,7 @@ def init_db():
         conn = connect_db()
         cursor = conn.cursor()
 
+        # Bookings table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS bookings (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -41,6 +38,7 @@ def init_db():
             )
         ''')
 
+        # Unique constraint
         cursor.execute('''
             SELECT COUNT(*) as count 
             FROM information_schema.statistics 
@@ -48,14 +46,10 @@ def init_db():
             AND table_name = 'bookings' 
             AND index_name = 'unique_booking'
         ''')
-        result = cursor.fetchone()
-        if result['count'] == 0:
-            cursor.execute('''
-                ALTER TABLE bookings 
-                ADD UNIQUE KEY unique_booking (date, time)
-            ''')
+        if cursor.fetchone()['count'] == 0:
+            cursor.execute('ALTER TABLE bookings ADD UNIQUE KEY unique_booking (date, time)')
 
-        # Table for configurable time slots
+        # Time slots table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS time_slots (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -65,7 +59,7 @@ def init_db():
             )
         ''')
 
-        # Insert default slots if empty
+        # Insert defaults if empty
         cursor.execute('SELECT COUNT(*) as count FROM time_slots')
         if cursor.fetchone()['count'] == 0:
             for i, slot in enumerate(DEFAULT_TIME_SLOTS):
@@ -81,53 +75,16 @@ def init_db():
     except Exception as e:
         print(f"Databasfel: {e}")
 
-
-# ── Auth ────────────────────────────────────────────────────────────────────
-
-@app.route('/api/auth/login', methods=['POST'])
-def login():
-    """Set user identity (name + apartment). No password needed."""
-    data = request.get_json()
-    name = (data.get('name') or '').strip()
-    apartment = (data.get('apartment') or '').strip()
-    if not name or not apartment:
-        return jsonify({'error': 'Namn och lägenhetsnummer krävs'}), 400
-    session['user_name'] = name
-    session['user_apartment'] = apartment
-    session['is_admin'] = False
-    return jsonify({'message': 'Inloggad', 'name': name, 'apartment': apartment, 'is_admin': False}), 200
+# Run on startup (works with Gunicorn too)
+init_db()
 
 
-@app.route('/api/auth/admin', methods=['POST'])
-def admin_login():
-    data = request.get_json()
-    if data.get('password') == ADMIN_PASSWORD:
-        session['is_admin'] = True
-        session['user_name'] = 'Admin'
-        session['user_apartment'] = ''
-        return jsonify({'message': 'Admin inloggad', 'is_admin': True}), 200
-    return jsonify({'error': 'Fel lösenord'}), 401
+# ── Admin check helper ───────────────────────────────────────────────
+def is_admin():
+    return request.headers.get('X-Admin-Password') == ADMIN_PASSWORD
 
 
-@app.route('/api/auth/logout', methods=['POST'])
-def logout():
-    session.clear()
-    return jsonify({'message': 'Utloggad'}), 200
-
-
-@app.route('/api/auth/me', methods=['GET'])
-def me():
-    if 'user_name' not in session:
-        return jsonify({'logged_in': False}), 200
-    return jsonify({
-        'logged_in': True,
-        'name': session.get('user_name'),
-        'apartment': session.get('user_apartment'),
-        'is_admin': session.get('is_admin', False)
-    }), 200
-
-
-# ── Bookings ────────────────────────────────────────────────────────────────
+# ── Bookings ─────────────────────────────────────────────────────────
 
 @app.route('/api/bookings', methods=['GET'])
 def get_bookings():
@@ -135,11 +92,10 @@ def get_bookings():
         conn = connect_db()
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT id, name, apartment, 
-                   DATE_FORMAT(date, '%Y-%m-%d') as date, 
+            SELECT id, name, apartment,
+                   DATE_FORMAT(date, '%Y-%m-%d') as date,
                    time
-            FROM bookings 
-            ORDER BY date, time
+            FROM bookings ORDER BY date, time
         ''')
         bookings = cursor.fetchall()
         cursor.close()
@@ -151,18 +107,11 @@ def get_bookings():
 
 @app.route('/api/bookings', methods=['POST'])
 def create_booking():
-    if 'user_name' not in session:
-        return jsonify({'error': 'Du måste vara inloggad för att boka'}), 401
     try:
         data = request.get_json()
-        required_fields = ['date', 'time']
-        for field in required_fields:
-            if field not in data or not data[field]:
+        for field in ['name', 'apartment', 'date', 'time']:
+            if not data.get(field):
                 return jsonify({'error': f'{field} är obligatoriskt'}), 400
-
-        # Use session identity
-        name = session['user_name']
-        apartment = session['user_apartment']
 
         booking_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
         if booking_date < datetime.now().date():
@@ -170,26 +119,20 @@ def create_booking():
 
         conn = connect_db()
         cursor = conn.cursor()
-
-        cursor.execute(
-            'SELECT id FROM bookings WHERE date = %s AND time = %s',
-            (data['date'], data['time'])
-        )
+        cursor.execute('SELECT id FROM bookings WHERE date = %s AND time = %s', (data['date'], data['time']))
         if cursor.fetchone():
             cursor.close()
             conn.close()
             return jsonify({'error': 'Denna tid är redan bokad'}), 400
 
-        cursor.execute('''
-            INSERT INTO bookings (name, apartment, date, time)
-            VALUES (%s, %s, %s, %s)
-        ''', (name, apartment, data['date'], data['time']))
-
+        cursor.execute(
+            'INSERT INTO bookings (name, apartment, date, time) VALUES (%s, %s, %s, %s)',
+            (data['name'], data['apartment'], data['date'], data['time'])
+        )
         conn.commit()
         booking_id = cursor.lastrowid
         cursor.close()
         conn.close()
-
         return jsonify({'message': 'Bokning skapad', 'id': booking_id}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -197,12 +140,14 @@ def create_booking():
 
 @app.route('/api/bookings/<int:booking_id>', methods=['DELETE'])
 def delete_booking(booking_id):
-    if 'user_name' not in session:
-        return jsonify({'error': 'Du måste vara inloggad'}), 401
     try:
+        # Frontend sends who is trying to delete
+        name      = request.headers.get('X-User-Name', '')
+        apartment = request.headers.get('X-User-Apartment', '')
+        admin     = is_admin()
+
         conn = connect_db()
         cursor = conn.cursor()
-
         cursor.execute('SELECT * FROM bookings WHERE id = %s', (booking_id,))
         booking = cursor.fetchone()
 
@@ -211,13 +156,8 @@ def delete_booking(booking_id):
             conn.close()
             return jsonify({'error': 'Bokning hittades inte'}), 404
 
-        # Admin can delete anything; users only their own
-        is_admin = session.get('is_admin', False)
-        is_own = (
-            booking['name'] == session.get('user_name') and
-            booking['apartment'] == session.get('user_apartment')
-        )
-        if not is_admin and not is_own:
+        is_own = (booking['name'] == name and booking['apartment'] == apartment)
+        if not admin and not is_own:
             cursor.close()
             conn.close()
             return jsonify({'error': 'Du kan bara ta bort dina egna bokningar'}), 403
@@ -236,10 +176,7 @@ def get_bookings_by_date(date):
     try:
         conn = connect_db()
         cursor = conn.cursor()
-        cursor.execute('''
-            SELECT id, name, apartment, time
-            FROM bookings WHERE date = %s ORDER BY time
-        ''', (date,))
+        cursor.execute('SELECT id, name, apartment, time FROM bookings WHERE date = %s ORDER BY time', (date,))
         bookings = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -248,7 +185,7 @@ def get_bookings_by_date(date):
         return jsonify({'error': str(e)}), 500
 
 
-# ── Time Slots (admin only) ──────────────────────────────────────────────────
+# ── Time Slots ────────────────────────────────────────────────────────
 
 @app.route('/api/timeslots', methods=['GET'])
 def get_timeslots():
@@ -266,17 +203,31 @@ def get_timeslots():
 
 @app.route('/api/timeslots', methods=['PUT'])
 def update_timeslots():
-    if not session.get('is_admin'):
+    if not is_admin():
         return jsonify({'error': 'Endast admin'}), 403
     try:
-        data = request.get_json()  # [{"slot": "07-10", "is_active": true}, ...]
+        data = request.get_json()
         conn = connect_db()
         cursor = conn.cursor()
-        for item in data:
-            cursor.execute(
-                'UPDATE time_slots SET is_active = %s WHERE slot = %s',
-                (item['is_active'], item['slot'])
-            )
+
+        # Handle updates and new slots
+        for i, item in enumerate(data):
+            cursor.execute('SELECT slot FROM time_slots WHERE slot = %s', (item['slot'],))
+            if cursor.fetchone():
+                cursor.execute('UPDATE time_slots SET is_active = %s, sort_order = %s WHERE slot = %s',
+                               (item['is_active'], i, item['slot']))
+            else:
+                cursor.execute('INSERT INTO time_slots (slot, is_active, sort_order) VALUES (%s, %s, %s)',
+                               (item['slot'], item['is_active'], i))
+
+        # Delete slots not in the new list
+        new_slots = [item['slot'] for item in data]
+        cursor.execute('SELECT slot FROM time_slots')
+        existing = [row['slot'] for row in cursor.fetchall()]
+        for slot in existing:
+            if slot not in new_slots:
+                cursor.execute('DELETE FROM time_slots WHERE slot = %s', (slot,))
+
         conn.commit()
         cursor.close()
         conn.close()
@@ -285,50 +236,13 @@ def update_timeslots():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/timeslots', methods=['POST'])
-def add_timeslot():
-    if not session.get('is_admin'):
-        return jsonify({'error': 'Endast admin'}), 403
-    try:
-        data = request.get_json()
-        slot = (data.get('slot') or '').strip()
-        if not slot:
-            return jsonify({'error': 'Slot krävs'}), 400
-        conn = connect_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT MAX(sort_order) as m FROM time_slots')
-        row = cursor.fetchone()
-        next_order = (row['m'] or 0) + 1
-        cursor.execute(
-            'INSERT INTO time_slots (slot, is_active, sort_order) VALUES (%s, TRUE, %s)',
-            (slot, next_order)
-        )
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return jsonify({'message': 'Tidslucka tillagd'}), 201
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/timeslots/<slot>', methods=['DELETE'])
-def delete_timeslot(slot):
-    if not session.get('is_admin'):
-        return jsonify({'error': 'Endast admin'}), 403
-    try:
-        conn = connect_db()
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM time_slots WHERE slot = %s', (slot,))
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return jsonify({'message': 'Tidslucka borttagen'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+@app.route('/api/admin/verify', methods=['POST'])
+def verify_admin():
+    if is_admin():
+        return jsonify({'ok': True}), 200
+    return jsonify({'error': 'Fel lösenord'}), 401
 
 
 if __name__ == '__main__':
-    init_db()
     print("Server startar på http://localhost:5000")
     app.run(debug=True)
-
