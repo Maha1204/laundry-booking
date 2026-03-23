@@ -36,12 +36,8 @@
 
         /* Header */
         header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            gap: 12px;
-            flex-wrap: wrap;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; gap: 12px; flex-wrap: wrap;
         }
         .header-title { display: flex; align-items: baseline; gap: 10px; }
         header h1 { font-size: 1.8em; letter-spacing: -0.5px; }
@@ -49,13 +45,9 @@
 
         /* User Bar */
         .user-bar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 8px 14px;
+            display: flex; align-items: center; gap: 10px;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 10px; padding: 8px 14px;
         }
         .user-badge { display: flex; align-items: center; gap: 6px; font-size: 0.85em; font-weight: 600; }
         .user-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
@@ -80,8 +72,7 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.4);
         }
         .login-tabs {
-            display: flex; border-bottom: 1px solid var(--border);
-            margin-bottom: 24px;
+            display: flex; border-bottom: 1px solid var(--border); margin-bottom: 24px;
         }
         .tab-btn {
             flex: 1; padding: 8px; background: transparent; border: none;
@@ -142,7 +133,6 @@
             color: var(--primary); height: 100%; min-height: 50px;
         }
         .slot-btn:hover { background: var(--primary); color: #0f172a; border-style: solid; }
-
         .slot-card {
             background: var(--booked-bg); color: var(--booked-text); padding: 8px;
             padding-right: 20px; border-radius: 6px; font-size: 0.8em; text-align: left;
@@ -178,43 +168,32 @@
             font-family: 'DM Mono', monospace; font-size: 0.85em;
         }
         .timeslot-item.inactive { opacity: 0.4; }
-        .toggle-btn {
-            background: transparent; border: none; cursor: pointer;
-            font-size: 1em; padding: 0; color: var(--success); transition: color 0.2s;
-        }
+        .toggle-btn { background: transparent; border: none; cursor: pointer; font-size: 1em; padding: 0; color: var(--success); }
         .timeslot-item.inactive .toggle-btn { color: var(--muted); }
-        .delete-slot-btn {
-            background: transparent; border: none; color: var(--danger);
-            cursor: pointer; font-size: 0.9em; opacity: 0.5; transition: opacity 0.2s;
-        }
+        .delete-slot-btn { background: transparent; border: none; color: var(--danger); cursor: pointer; font-size: 0.9em; opacity: 0.5; transition: opacity 0.2s; }
         .delete-slot-btn:hover { opacity: 1; }
         .add-slot-form { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
         .add-slot-form input {
             background: var(--bg); border: 1px solid var(--border); color: var(--text);
-            padding: 8px 12px; border-radius: 6px; font-family: 'DM Mono', monospace;
-            font-size: 0.9em; width: 100px;
+            padding: 8px 12px; border-radius: 6px; font-family: 'DM Mono', monospace; font-size: 0.9em; width: 100px;
         }
         .add-slot-form input:focus { outline: none; border-color: var(--admin); }
         .btn-admin {
             background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.3);
             color: var(--admin); padding: 8px 14px; border-radius: 6px;
-            font-size: 0.85em; font-weight: 600; cursor: pointer; transition: all 0.2s;
-            font-family: 'DM Sans', sans-serif;
+            font-size: 0.85em; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif;
         }
         .btn-admin:hover { background: rgba(167,139,250,0.2); }
 
         /* Modal */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(11,17,32,0.85);
-            display: none; justify-content: center; align-items: center;
+            background: rgba(11,17,32,0.85); display: none; justify-content: center; align-items: center;
             z-index: 100; backdrop-filter: blur(5px);
         }
         .modal-content {
             background: var(--card); padding: 24px; border-radius: 12px;
-            width: 90%; max-width: 350px;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-            border: 1px solid var(--border);
+            width: 90%; max-width: 350px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid var(--border);
         }
         .modal-header { margin-bottom: 20px; text-align: center; }
         .modal-header h2 { font-size: 1.3em; margin-bottom: 5px; }
@@ -241,8 +220,7 @@
         .btn-primary:hover { background: var(--primary-hover); }
         .btn-cancel {
             width: 100%; padding: 10px; margin-top: 5px; background: transparent;
-            color: var(--muted); border: none; cursor: pointer; font-size: 0.9em;
-            font-family: 'DM Sans', sans-serif;
+            color: var(--muted); border: none; cursor: pointer; font-size: 0.9em; font-family: 'DM Sans', sans-serif;
         }
 
         /* Toast */
@@ -251,8 +229,7 @@
             transform: translateX(-50%) translateY(20px);
             background: var(--card); border: 1px solid var(--border);
             color: var(--text); padding: 10px 20px; border-radius: 8px;
-            font-size: 0.9em; opacity: 0; transition: all 0.3s;
-            z-index: 999; pointer-events: none;
+            font-size: 0.9em; opacity: 0; transition: all 0.3s; z-index: 999; pointer-events: none;
         }
         .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
         .toast.success { border-color: var(--success); color: var(--success); }
@@ -264,15 +241,16 @@
 
     <!-- Login Screen -->
     <div id="loginScreen" class="login-screen" style="display:none;">
-        <div style="text-align:center; margin-bottom: 8px;">
+        <div style="text-align:center; margin-bottom:8px;">
             <h1 style="font-size:1.8em;">Tvättstugan</h1>
-            <p style="color:var(--muted); margin-top:6px;">Logga in för att boka</p>
+            <p style="color:var(--muted);margin-top:6px;">Logga in för att boka</p>
         </div>
         <div class="login-card">
             <div class="login-tabs">
                 <button class="tab-btn active" onclick="switchTab('user')">Boende</button>
                 <button class="tab-btn admin-tab" onclick="switchTab('admin')">Admin</button>
             </div>
+            <!-- User login -->
             <div id="userLoginForm">
                 <div class="form-group">
                     <label>Ditt Namn</label>
@@ -284,6 +262,7 @@
                 </div>
                 <button class="btn-primary" onclick="doUserLogin()">Logga In</button>
             </div>
+            <!-- Admin login -->
             <div id="adminLoginForm" style="display:none;">
                 <div class="form-group">
                     <label>Admin-lösenord</label>
@@ -330,7 +309,6 @@
             <div id="calendarGrid" class="calendar-grid"></div>
         </div>
     </div>
-
 </div>
 
 <!-- Booking Modal -->
@@ -353,17 +331,26 @@
 <script>
 const API_URL = 'https://laundry-booking-gspj.onrender.com/api';
 
+// ── LocalStorage user state ──────────────────────────────────────────
+// currentUser = { name, apartment, is_admin, adminPassword? }
 let currentUser = null;
-let allBookings = [];
-let timeSlots = [];
+let allBookings  = [];
+let timeSlots    = [];
 let allTimeSlots = [];
 let currentWeekStart = getMonday(new Date());
+
+function saveUser(user) {
+    localStorage.setItem('laundry_user', JSON.stringify(user));
+}
+function loadUser() {
+    try { return JSON.parse(localStorage.getItem('laundry_user')); } catch { return null; }
+}
+function clearUser() { localStorage.removeItem('laundry_user'); }
 
 // ── Toast ────────────────────────────────────────────────────────────
 function showToast(msg, type = '') {
     const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'toast show ' + type;
+    t.textContent = msg; t.className = 'toast show ' + type;
     setTimeout(() => t.className = 'toast', 2800);
 }
 
@@ -372,61 +359,47 @@ function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach((b, i) => {
         b.classList.toggle('active', (tab === 'user' && i === 0) || (tab === 'admin' && i === 1));
     });
-    document.getElementById('userLoginForm').style.display = tab === 'user' ? '' : 'none';
+    document.getElementById('userLoginForm').style.display  = tab === 'user'  ? '' : 'none';
     document.getElementById('adminLoginForm').style.display = tab === 'admin' ? '' : 'none';
 }
 
-async function doUserLogin() {
+function doUserLogin() {
     const name = document.getElementById('loginName').value.trim();
     const apt  = document.getElementById('loginApt').value.trim();
     if (!name || !apt) { showToast('Fyll i namn och lägenhetsnummer', 'error'); return; }
-    try {
-        const res = await fetch(`${API_URL}/auth/login`, {
-            method: 'POST', credentials: 'include',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ name, apartment: apt })
-        });
-        const data = await res.json();
-        if (res.ok) { currentUser = data; showMain(); }
-        else showToast(data.error, 'error');
-    } catch { showToast('Serverfel', 'error'); }
+    currentUser = { name, apartment: apt, is_admin: false };
+    saveUser(currentUser);
+    showMain();
 }
 
 async function doAdminLogin() {
     const pwd = document.getElementById('adminPassword').value;
     try {
-        const res = await fetch(`${API_URL}/auth/admin`, {
-            method: 'POST', credentials: 'include',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ password: pwd })
+        const res = await fetch(`${API_URL}/admin/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Password': pwd }
         });
-        const data = await res.json();
-        if (res.ok) { currentUser = data; showMain(); }
-        else showToast(data.error, 'error');
+        if (res.ok) {
+            currentUser = { name: 'Admin', apartment: '', is_admin: true, adminPassword: pwd };
+            saveUser(currentUser);
+            showMain();
+        } else {
+            showToast('Fel lösenord', 'error');
+        }
     } catch { showToast('Serverfel', 'error'); }
 }
 
-async function doLogout() {
-    await fetch(`${API_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
+function doLogout() {
+    clearUser();
     currentUser = null;
-    document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('mainApp').style.display   = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
-}
-
-async function checkSession() {
-    try {
-        const res = await fetch(`${API_URL}/auth/me`, { credentials: 'include' });
-        const data = await res.json();
-        if (data.logged_in) { currentUser = data; showMain(); }
-        else document.getElementById('loginScreen').style.display = 'flex';
-    } catch {
-        document.getElementById('loginScreen').style.display = 'flex';
-    }
+    document.getElementById('adminPanel').style.display  = 'none';
 }
 
 async function showMain() {
     document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('mainApp').style.display = '';
+    document.getElementById('mainApp').style.display     = '';
     renderUserBar();
     await fetchTimeSlots();
     await fetchBookings();
@@ -439,7 +412,6 @@ async function showMain() {
 
 function renderUserBar() {
     const bar = document.getElementById('userBar');
-    if (!currentUser) { bar.innerHTML = ''; return; }
     const isAdmin = currentUser.is_admin;
     bar.innerHTML = `
         <div class="user-badge ${isAdmin ? 'admin' : ''}">
@@ -471,9 +443,9 @@ function renderAdminSlots() {
         const div = document.createElement('div');
         div.className = 'timeslot-item' + (s.is_active ? '' : ' inactive');
         div.innerHTML = `
-            <button class="toggle-btn" onclick="toggleSlot('${s.slot}')" title="${s.is_active ? 'Inaktivera' : 'Aktivera'}">${s.is_active ? '✓' : '○'}</button>
+            <button class="toggle-btn" onclick="toggleSlot('${escHtml(s.slot)}')">${s.is_active ? '✓' : '○'}</button>
             <span>${escHtml(s.slot)}</span>
-            <button class="delete-slot-btn" onclick="removeSlotLocal('${s.slot}')" title="Ta bort">✕</button>
+            <button class="delete-slot-btn" onclick="removeSlotLocal('${escHtml(s.slot)}')">✕</button>
         `;
         list.appendChild(div);
     });
@@ -502,8 +474,11 @@ function addSlot() {
 async function saveSlots() {
     try {
         const res = await fetch(`${API_URL}/timeslots`, {
-            method: 'PUT', credentials: 'include',
-            headers: {'Content-Type': 'application/json'},
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Password': currentUser.adminPassword || ''
+            },
             body: JSON.stringify(allTimeSlots)
         });
         if (res.ok) {
@@ -527,9 +502,9 @@ async function fetchBookings() {
 
 // ── Calendar ──────────────────────────────────────────────────────────
 function getMonday(d) {
-    const day = d.getDay();
     const m = new Date(d);
-    m.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
+    const day = m.getDay();
+    m.setDate(m.getDate() - day + (day === 0 ? -6 : 1));
     return m;
 }
 
@@ -544,8 +519,7 @@ function renderCalendar() {
     const swedishDays = ['MÅN','TIS','ONS','TOR','FRE','LÖR','SÖN'];
     const weekDates = [];
     const temp = new Date(currentWeekStart);
-    const endDate = new Date(temp);
-    endDate.setDate(endDate.getDate() + 6);
+    const endDate = new Date(temp); endDate.setDate(endDate.getDate() + 6);
     document.getElementById('currentWeekDisplay').textContent =
         `v.${getWeekNumber(temp)} (${fmt(temp)} – ${fmt(endDate)})`;
 
@@ -582,8 +556,7 @@ function renderCalendar() {
                 cell.innerHTML = `<span style="color:#334155;font-size:1.2em;">–</span>`;
             } else {
                 const btn = document.createElement('button');
-                btn.className = 'slot-btn';
-                btn.textContent = '+';
+                btn.className = 'slot-btn'; btn.textContent = '+';
                 btn.onclick = () => openModal(dayObj.date, slot, dayObj.display);
                 cell.appendChild(btn);
             }
@@ -630,9 +603,13 @@ async function confirmBooking() {
     const time = document.getElementById('selectedTime').value;
     try {
         const res = await fetch(`${API_URL}/bookings`, {
-            method: 'POST', credentials: 'include',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ date, time })
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: currentUser.name,
+                apartment: currentUser.apartment,
+                date, time
+            })
         });
         if (res.ok) {
             closeModal();
@@ -648,9 +625,13 @@ async function confirmBooking() {
 async function deleteBooking(id) {
     if (!confirm('Vill du avboka denna tid?')) return;
     try {
-        const res = await fetch(`${API_URL}/bookings/${id}`, {
-            method: 'DELETE', credentials: 'include'
-        });
+        const headers = {
+            'X-User-Name':      currentUser.name,
+            'X-User-Apartment': currentUser.apartment,
+        };
+        if (currentUser.is_admin) headers['X-Admin-Password'] = currentUser.adminPassword || '';
+
+        const res = await fetch(`${API_URL}/bookings/${id}`, { method: 'DELETE', headers });
         if (res.ok) {
             showToast('Bokning avbokad', 'success');
             await fetchBookings(); renderCalendar();
@@ -670,7 +651,15 @@ document.addEventListener('keydown', e => {
     else doUserLogin();
 });
 
-checkSession();
+// ── Init — check localStorage ─────────────────────────────────────────
+const saved = loadUser();
+if (saved) {
+    currentUser = saved;
+    showMain();
+} else {
+    document.getElementById('loginScreen').style.display = 'flex';
+}
 </script>
 </body>
 </html>
+
