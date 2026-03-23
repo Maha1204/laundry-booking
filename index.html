@@ -155,36 +155,6 @@
         }
         .unbook-btn:hover { background: rgba(239,68,68,0.15); }
 
-        /* Admin Panel */
-        .admin-panel {
-            background: var(--card); border: 1px solid rgba(167,139,250,0.3);
-            border-radius: 12px; padding: 20px; margin-bottom: 20px;
-        }
-        .admin-panel h3 { color: var(--admin); font-size: 1em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-        .timeslot-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-        .timeslot-item {
-            display: flex; align-items: center; gap: 6px; background: var(--bg);
-            border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px;
-            font-family: 'DM Mono', monospace; font-size: 0.85em;
-        }
-        .timeslot-item.inactive { opacity: 0.4; }
-        .toggle-btn { background: transparent; border: none; cursor: pointer; font-size: 1em; padding: 0; color: var(--success); }
-        .timeslot-item.inactive .toggle-btn { color: var(--muted); }
-        .delete-slot-btn { background: transparent; border: none; color: var(--danger); cursor: pointer; font-size: 0.9em; opacity: 0.5; transition: opacity 0.2s; }
-        .delete-slot-btn:hover { opacity: 1; }
-        .add-slot-form { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
-        .add-slot-form input {
-            background: var(--bg); border: 1px solid var(--border); color: var(--text);
-            padding: 8px 12px; border-radius: 6px; font-family: 'DM Mono', monospace; font-size: 0.9em; width: 100px;
-        }
-        .add-slot-form input:focus { outline: none; border-color: var(--admin); }
-        .btn-admin {
-            background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.3);
-            color: var(--admin); padding: 8px 14px; border-radius: 6px;
-            font-size: 0.85em; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif;
-        }
-        .btn-admin:hover { background: rgba(167,139,250,0.2); }
-
         /* Modal */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -250,7 +220,6 @@
                 <button class="tab-btn active" onclick="switchTab('user')">Boende</button>
                 <button class="tab-btn admin-tab" onclick="switchTab('admin')">Admin</button>
             </div>
-            <!-- User login -->
             <div id="userLoginForm">
                 <div class="form-group">
                     <label>Ditt Namn</label>
@@ -262,7 +231,6 @@
                 </div>
                 <button class="btn-primary" onclick="doUserLogin()">Logga In</button>
             </div>
-            <!-- Admin login -->
             <div id="adminLoginForm" style="display:none;">
                 <div class="form-group">
                     <label>Admin-lösenord</label>
@@ -288,17 +256,6 @@
             <div>Lämna tvättstugan ren och fin. Respektera tiderna.</div>
         </div>
 
-        <!-- Admin Panel -->
-        <div id="adminPanel" class="admin-panel" style="display:none;">
-            <h3>🔧 Admin — Hantera Tidsluckor</h3>
-            <div id="timeslotList" class="timeslot-list"></div>
-            <div class="add-slot-form">
-                <input type="text" id="newSlotInput" placeholder="T.ex. 22-01" maxlength="10">
-                <button class="btn-admin" onclick="addSlot()">+ Lägg till</button>
-                <button class="btn-admin" onclick="saveSlots()">💾 Spara</button>
-            </div>
-        </div>
-
         <div class="calendar-controls">
             <button class="week-btn" onclick="changeWeek(-1)">← Föregående</button>
             <span id="currentWeekDisplay">Vecka ...</span>
@@ -311,7 +268,7 @@
     </div>
 </div>
 
-<!-- Booking Modal -->
+<!-- Booking Modal (only for non-admin) -->
 <div id="bookingModal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
@@ -331,21 +288,15 @@
 <script>
 const API_URL = 'https://laundry-booking-gspj.onrender.com/api';
 
-// ── LocalStorage user state ──────────────────────────────────────────
-// currentUser = { name, apartment, is_admin, adminPassword? }
-let currentUser = null;
+let currentUser  = null;
 let allBookings  = [];
 let timeSlots    = [];
-let allTimeSlots = [];
 let currentWeekStart = getMonday(new Date());
 
-function saveUser(user) {
-    localStorage.setItem('laundry_user', JSON.stringify(user));
-}
-function loadUser() {
-    try { return JSON.parse(localStorage.getItem('laundry_user')); } catch { return null; }
-}
-function clearUser() { localStorage.removeItem('laundry_user'); }
+// ── LocalStorage ─────────────────────────────────────────────────────
+function saveUser(u)  { localStorage.setItem('laundry_user', JSON.stringify(u)); }
+function loadUser()   { try { return JSON.parse(localStorage.getItem('laundry_user')); } catch { return null; } }
+function clearUser()  { localStorage.removeItem('laundry_user'); }
 
 // ── Toast ────────────────────────────────────────────────────────────
 function showToast(msg, type = '') {
@@ -390,11 +341,9 @@ async function doAdminLogin() {
 }
 
 function doLogout() {
-    clearUser();
-    currentUser = null;
-    document.getElementById('mainApp').style.display   = 'none';
+    clearUser(); currentUser = null;
+    document.getElementById('mainApp').style.display    = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
-    document.getElementById('adminPanel').style.display  = 'none';
 }
 
 async function showMain() {
@@ -403,10 +352,6 @@ async function showMain() {
     renderUserBar();
     await fetchTimeSlots();
     await fetchBookings();
-    if (currentUser.is_admin) {
-        document.getElementById('adminPanel').style.display = '';
-        renderAdminSlots();
-    }
     renderCalendar();
 }
 
@@ -429,67 +374,11 @@ function renderUserBar() {
 async function fetchTimeSlots() {
     try {
         const res = await fetch(`${API_URL}/timeslots`);
-        allTimeSlots = await res.json();
-        timeSlots = allTimeSlots.filter(s => s.is_active).map(s => s.slot);
+        const data = await res.json();
+        timeSlots = data.filter(s => s.is_active).map(s => s.slot);
     } catch {
         timeSlots = ['07-10','10-13','13-16','16-19','19-22'];
     }
-}
-
-function renderAdminSlots() {
-    const list = document.getElementById('timeslotList');
-    list.innerHTML = '';
-    allTimeSlots.forEach(s => {
-        const div = document.createElement('div');
-        div.className = 'timeslot-item' + (s.is_active ? '' : ' inactive');
-        div.innerHTML = `
-            <button class="toggle-btn" onclick="toggleSlot('${escHtml(s.slot)}')">${s.is_active ? '✓' : '○'}</button>
-            <span>${escHtml(s.slot)}</span>
-            <button class="delete-slot-btn" onclick="removeSlotLocal('${escHtml(s.slot)}')">✕</button>
-        `;
-        list.appendChild(div);
-    });
-}
-
-function toggleSlot(slot) {
-    const s = allTimeSlots.find(x => x.slot === slot);
-    if (s) { s.is_active = !s.is_active; renderAdminSlots(); }
-}
-
-function removeSlotLocal(slot) {
-    allTimeSlots = allTimeSlots.filter(x => x.slot !== slot);
-    renderAdminSlots();
-}
-
-function addSlot() {
-    const input = document.getElementById('newSlotInput');
-    const val = input.value.trim();
-    if (!val) return;
-    if (allTimeSlots.find(x => x.slot === val)) { showToast('Finns redan', 'error'); return; }
-    allTimeSlots.push({ slot: val, is_active: true });
-    renderAdminSlots();
-    input.value = '';
-}
-
-async function saveSlots() {
-    try {
-        const res = await fetch(`${API_URL}/timeslots`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Admin-Password': currentUser.adminPassword || ''
-            },
-            body: JSON.stringify(allTimeSlots)
-        });
-        if (res.ok) {
-            showToast('Tidsluckor sparade!', 'success');
-            await fetchTimeSlots();
-            renderCalendar();
-            renderAdminSlots();
-        } else {
-            showToast('Fel vid sparning', 'error');
-        }
-    } catch { showToast('Serverfel', 'error'); }
 }
 
 // ── Bookings ──────────────────────────────────────────────────────────
@@ -555,10 +444,15 @@ function renderCalendar() {
             } else if (isPast) {
                 cell.innerHTML = `<span style="color:#334155;font-size:1.2em;">–</span>`;
             } else {
-                const btn = document.createElement('button');
-                btn.className = 'slot-btn'; btn.textContent = '+';
-                btn.onclick = () => openModal(dayObj.date, slot, dayObj.display);
-                cell.appendChild(btn);
+                // Admin cannot make new bookings, only users can
+                if (!currentUser.is_admin) {
+                    const btn = document.createElement('button');
+                    btn.className = 'slot-btn'; btn.textContent = '+';
+                    btn.onclick = () => openModal(dayObj.date, slot, dayObj.display);
+                    cell.appendChild(btn);
+                } else {
+                    cell.innerHTML = `<span style="color:#334155;font-size:1.2em;">–</span>`;
+                }
             }
             grid.appendChild(cell);
         });
@@ -566,8 +460,7 @@ function renderCalendar() {
 }
 
 function createCell(tag, cls, text) {
-    const el = document.createElement(tag);
-    el.className = cls; el.textContent = text; return el;
+    const el = document.createElement(tag); el.className = cls; el.textContent = text; return el;
 }
 function fmt(d) { return `${d.getDate()}/${d.getMonth()+1}`; }
 function getWeekNumber(d) {
@@ -605,11 +498,7 @@ async function confirmBooking() {
         const res = await fetch(`${API_URL}/bookings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: currentUser.name,
-                apartment: currentUser.apartment,
-                date, time
-            })
+            body: JSON.stringify({ name: currentUser.name, apartment: currentUser.apartment, date, time })
         });
         if (res.ok) {
             closeModal();
@@ -630,7 +519,6 @@ async function deleteBooking(id) {
             'X-User-Apartment': currentUser.apartment,
         };
         if (currentUser.is_admin) headers['X-Admin-Password'] = currentUser.adminPassword || '';
-
         const res = await fetch(`${API_URL}/bookings/${id}`, { method: 'DELETE', headers });
         if (res.ok) {
             showToast('Bokning avbokad', 'success');
@@ -651,15 +539,10 @@ document.addEventListener('keydown', e => {
     else doUserLogin();
 });
 
-// ── Init — check localStorage ─────────────────────────────────────────
+// ── Init ─────────────────────────────────────────────────────────────
 const saved = loadUser();
-if (saved) {
-    currentUser = saved;
-    showMain();
-} else {
-    document.getElementById('loginScreen').style.display = 'flex';
-}
+if (saved) { currentUser = saved; showMain(); }
+else document.getElementById('loginScreen').style.display = 'flex';
 </script>
 </body>
 </html>
-
